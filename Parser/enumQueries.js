@@ -7,7 +7,8 @@ export const amino_next_amino = `SELECT protein_id,
                                 amino2_number AS amino<<amino 2 id>>_number
                                 FROM  <<table>>
                                 WHERE <<condition 1>>
-                                AND   <<condition 2>>`;
+                                AND   <<condition 2>>
+                                <<gap condition>>`;
 
 export const amino_next_amino_any = `SELECT protein_id,
                                 amino1_id     AS amino<<amino id>>_id,
@@ -17,7 +18,8 @@ export const amino_next_amino_any = `SELECT protein_id,
                                 amino2_symbol AS amino<<amino_any id>>_symbol,
                                 amino2_number AS amino<<amino_any id>>_number
                                 FROM  <<table>>
-                                WHERE  <<condition>>`;
+                                WHERE  <<condition>>
+                                <<gap condition>>`;
 
 export const amino_any_next_amino = `SELECT protein_id,
                                 amino1_id     AS amino<<amino_any id>>_id,
@@ -27,7 +29,8 @@ export const amino_any_next_amino = `SELECT protein_id,
                                 amino2_symbol AS amino<<amino id>>_symbol,
                                 amino2_number AS amino<<amino id>>_number
                                 FROM  <<table>>
-                                WHERE  <<condition>>`;
+                                WHERE  <<condition>>
+                                <<gap condition>>`;
 
 export const amino_any_next_amino_any = `SELECT protein_id,
                                 amino1_id     AS amino<<amino_any 1 id>>_id,
@@ -37,7 +40,11 @@ export const amino_any_next_amino_any = `SELECT protein_id,
                                 amino2_symbol AS amino<<amino_any 2 id>>_symbol,
                                 amino2_number AS amino<<amino_any 2 id>>_number
                                 FROM  <<table>>
-                                `;
+                                <<gap condition>>`;
+
+export const amino_gap_condition = `AND ((Split_part(amino2_id, '_', 3)::INT) > (Split_part(amino1_id, '_', 3)::INT))
+                              AND ((((Split_part(amino2_id, '_', 3)::INT) - (Split_part(amino1_id, '_', 3)::INT)) ::INT)::INT - 1 >= <<min_gap>>)
+                              AND ((((Split_part(amino2_id, '_', 3)::INT) - (Split_part(amino1_id, '_', 3)::INT)) ::INT)::INT - 1 <= <<max_gap>>)`;
 
 export const ligand_amino = '';
 

@@ -39,7 +39,6 @@ app.get('/getAllAminos', async (req, res) => {
 app.get('/getProteinsByPattern', async (req, res) => {
     try {
         var result = Parser(req.query.pattern.replace(';',','));
-        console.log(result.query)
         var limit = req.query.limit;
         var offset = req.query.offset;
         var query = result.query + ` LIMIT ${limit} OFFSET ${offset}`;
