@@ -38,19 +38,6 @@ export const amino_any_next_amino_any = `SELECT protein_id,
                                 amino2_number AS amino<<amino_any 2 id>>_number
                                 FROM  <<table>>
                                 `;
-                                
-export const amino_gap_amino = `SELECT *,
-                                <<diffs_select>>
-                                FROM (
-                                    SELECT * FROM (
-                                        <<big_query>>
-                                    ) AS gapquery
-                                    WHERE  <<diffs_where>>
-                                ) AS gap_range_query
-                                WHERE (
-                                    <<diffs_min_max>>
-                                )`;
-
 
 export const ligand_amino = '';
 

@@ -5,20 +5,9 @@ import getQuery from './enumQueries.js';
 import { amino_any_next_amino,
 		 amino_any_next_amino_any,
 		 amino_next_amino,
-		 amino_next_amino_any,
-		 amino_gap_amino, diff_select, diff_where, diff_min_max
+		 amino_next_amino_any
 		} from './enumQueries.js';
 import { setBigQuery } from './catchElements.js';
-
-
-class repExt {
-	constructor(last, next, min, max) {
-		this.last = last;
-		this.next = next;
-		this.min = min;
-		this.max = max;
-	}
-}
 
 // This class defines a complete listener for a parse tree produced by ExprParser.
 export default class ExprListener extends antlr4.tree.ParseTreeListener {
@@ -26,6 +15,11 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 	index = 0;
 	queries = [];
 	repetitions = [];
+
+	// auxiliary for gaps
+	isGap = false;
+	min = 0;
+	max = 0;
 
 	// Enter a parse tree produced by ExprParser#pattern.
 	enterPattern(ctx) {
@@ -37,32 +31,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 		var completeQuery = `
 		SELECT id, title, classification, organism, Q.* FROM (
 			`+ bigQuery + `) AS Q NATURAL JOIN protein WHERE protein_id=id`;
-
-		// Check repetitions
-		this.repetitions.forEach(rep => {
-			var query = amino_gap_amino;
-			query = query.replaceAll('<<amino1_id>>', rep.last);
-			query = query.replaceAll('<<amino2_id>>', rep.next);
-			query = query.replaceAll('<<gap_min>>', rep.min);
-			query = query.replaceAll('<<gap_max>>', rep.max);
-			var diffs_select = "";
-			var diffs_where = "";
-			var diffs_min_max = "";
-			for (let i = 1; i < this.index; i++) {
-				diffs_select = diffs_select + diff_select.replaceAll('<<amino1_id>>', i.toString()).replaceAll('<<amino2_id>>', (i+1).toString());
-				diffs_where = diffs_where + diff_where.replaceAll('<<amino1_id>>', i.toString()).replaceAll('<<amino2_id>>', (i+1).toString()) + " AND ";
-				diffs_min_max = diffs_min_max + diff_min_max.replaceAll('<<amino1_id>>', i.toString()).replaceAll('<<amino2_id>>', (i+1).toString()) + " AND ";
-			}
-			diffs_select = diffs_select.slice(0, diffs_select.length-1);
-			diffs_where = diffs_where.slice(0, diffs_where.length-5);
-			diffs_min_max = diffs_min_max.slice(0, diffs_min_max.length-5);
-			query = query.replaceAll('<<diffs_select>>', diffs_select);
-			query = query.replaceAll('<<diffs_where>>', diffs_where);
-			query = query.replaceAll('<<diffs_min_max>>', diffs_min_max);
-			completeQuery = completeQuery + " AND " + query;
-		});
-
-		console.log(completeQuery)
 		setBigQuery(completeQuery);
 	}
 
@@ -803,10 +771,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ExprParser#aminorepetitionextension.
 	exitAminorepetitionextension(ctx) {
-		var components = ctx.getText().split('(');
-		var minmax = components[1].replace(')', '').split(',');
-		var rep = new repExt(this.index, this.index + 1, minmax[0], minmax[1]);
-		this.repetitions.push(rep);
+		
 	}
 
 
