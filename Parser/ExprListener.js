@@ -1,4 +1,4 @@
-// Generated from java-escape by ANTLR 4.11.1
+// Generated from Expr.g4 by ANTLR 4.12.0
 // jshint ignore: start
 import antlr4 from 'antlr4';
 import getQuery from './enumQueries.js';
@@ -13,6 +13,7 @@ import { setBigQuery } from './catchElements.js';
 
 // This class defines a complete listener for a parse tree produced by ExprParser.
 export default class ExprListener extends antlr4.tree.ParseTreeListener {
+
 	lastAmino = "";
 	index = 0;
 	queries = [];
@@ -26,15 +27,44 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 	// Enter a parse tree produced by ExprParser#pattern.
 	enterPattern(ctx) {
+		console.log('PATTERN');
 	}
 
 	// Exit a parse tree produced by ExprParser#pattern.
 	exitPattern(ctx) {
+		console.log('PATTERN');
 		var bigQuery = getQuery(this.queries);
 		var completeQuery = `
 		SELECT id, title, classification, organism, Q.* FROM (
 			`+ bigQuery + `) AS Q NATURAL JOIN protein WHERE protein_id=id`;
 		setBigQuery(completeQuery);
+	}
+
+
+	// Enter a parse tree produced by ExprParser#ligandclause.
+	enterLigandclause(ctx) {
+	}
+
+	// Exit a parse tree produced by ExprParser#ligandclause.
+	exitLigandclause(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ExprParser#ligandextended.
+	enterLigandextended(ctx) {
+	}
+
+	// Exit a parse tree produced by ExprParser#ligandextended.
+	exitLigandextended(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ExprParser#ligand.
+	enterLigand(ctx) {
+	}
+
+	// Exit a parse tree produced by ExprParser#ligand.
+	exitLigand(ctx) {
 	}
 
 
@@ -53,6 +83,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ExprParser#aminoclause.
 	exitAminoclause(ctx) {
+		console.log('AMINO CLAUSE');
 		// First check the type of amino acid: can be unique or group or except.
 		if (this.lastAmino == "") {
 			this.lastAmino = ctx.getText()
@@ -71,7 +102,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -99,7 +130,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -138,7 +169,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -177,7 +208,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -210,7 +241,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -249,7 +280,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -296,7 +327,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -343,7 +374,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -387,7 +418,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -426,7 +457,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -473,7 +504,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -520,7 +551,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -564,7 +595,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -594,7 +625,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -634,7 +665,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -674,7 +705,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
-						
+
 						query = query.replaceAll("<<table>>", 'distance_amino_amino');
 						query = query.replaceAll("<<gap condition>>", gap_condition);
 						this.isGap = false;
@@ -724,6 +755,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ExprParser#aminorepetition.
 	exitAminorepetition(ctx) {
+		console.log('AMINO REPETITION');
 		var amino = ctx.getText().split('(')[0]
 		var repetition = ctx.getText().split('(')[1].replace(')', '')
 		for (let i = 0; i < repetition; i++) {
@@ -1077,6 +1109,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ExprParser#aminorepetitionextension.
 	exitAminorepetitionextension(ctx) {
+		console.log('AMINO REPETITION EXTENSION')
 		var gap = ctx.getText();
 		var minmax = gap.split('(')[1].replaceAll(')', '').split(',');
 		var min = minmax[0];
@@ -1129,6 +1162,15 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ExprParser#patternend.
 	exitPatternend(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ExprParser#character.
+	enterCharacter(ctx) {
+	}
+
+	// Exit a parse tree produced by ExprParser#character.
+	exitCharacter(ctx) {
 	}
 
 

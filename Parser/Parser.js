@@ -10,7 +10,7 @@ export default function Parser(pattern) {
     setError({});
     const input = pattern;
     const chars = new antlr4.InputStream(input);
-    const lexer = new ExprLexer(chars);
+    const lexer = new ExprLexer(chars); // <== here is the problem
     const tokens = new antlr4.CommonTokenStream(lexer);
     const parser = new ExprParser(tokens);
     
