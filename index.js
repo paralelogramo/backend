@@ -38,7 +38,7 @@ app.get('/getAllAminos', async (req, res) => {
 
 app.get('/getProteinsByPattern', async (req, res) => {
     try {
-        var result = Parser(req.query.pattern.replace(';',','));
+        var result = Parser(req.query.pattern.replaceAll(';',','));
         var limit = req.query.limit;
         var offset = req.query.offset;
         var query = result.query + ` LIMIT ${limit} OFFSET ${offset}`;
@@ -77,9 +77,12 @@ app.get('/getProteinsByPattern', async (req, res) => {
     }
 })
 
-app.get('/getTotalProteinsByPattern', async (req, res) => {
+app.get('/getTotalProteinsByPattern', async (req, res) => {    
     try {
-        var result = Parser(req.query.pattern.replace(';', ','));
+        var query = req.query.pattern.replaceAll(';', ',')
+        console.log(query)
+        var result = Parser(query);
+        console.log(result.query)
         var error = getError();
 
         if (Object.keys(error).length == 0) {
