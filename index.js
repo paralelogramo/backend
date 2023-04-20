@@ -80,9 +80,7 @@ app.get('/getProteinsByPattern', async (req, res) => {
 app.get('/getTotalProteinsByPattern', async (req, res) => {    
     try {
         var query = req.query.pattern.replaceAll(';', ',')
-        console.log(query)
         var result = Parser(query);
-        console.log(result.query)
         var error = getError();
 
         if (Object.keys(error).length == 0) {

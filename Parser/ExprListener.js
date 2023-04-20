@@ -27,12 +27,10 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 	// Enter a parse tree produced by ExprParser#pattern.
 	enterPattern(ctx) {
-		console.log('PATTERN');
 	}
 
 	// Exit a parse tree produced by ExprParser#pattern.
 	exitPattern(ctx) {
-		console.log('PATTERN');
 		var bigQuery = getQuery(this.queries);
 		var completeQuery = `
 		SELECT id, title, classification, organism, Q.* FROM (
@@ -83,7 +81,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ExprParser#aminoclause.
 	exitAminoclause(ctx) {
-		console.log('AMINO CLAUSE');
 		// First check the type of amino acid: can be unique or group or except.
 		if (this.lastAmino == "") {
 			this.lastAmino = ctx.getText()
@@ -755,7 +752,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ExprParser#aminorepetition.
 	exitAminorepetition(ctx) {
-		console.log('AMINO REPETITION');
 		var amino = ctx.getText().split('(')[0]
 		var repetition = ctx.getText().split('(')[1].replace(')', '')
 		for (let i = 0; i < repetition; i++) {
@@ -1109,7 +1105,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ExprParser#aminorepetitionextension.
 	exitAminorepetitionextension(ctx) {
-		console.log('AMINO REPETITION EXTENSION')
 		var gap = ctx.getText();
 		var minmax = gap.split('(')[1].replaceAll(')', '').split(',');
 		var min = minmax[0];
