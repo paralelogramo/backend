@@ -7,23 +7,32 @@ import {
 	amino_any_next_amino_any,
 	amino_next_amino,
 	amino_next_amino_any,
-	amino_gap_condition
+	amino_gap_condition,
+	any_ligand_to_amino,
+	any_ligand_to_any_amino,
+	ligand_to_amino,
+	ligand_to_any_amino
 } from './enumQueries.js';
 import { setBigQuery } from './catchElements.js';
 
 // This class defines a complete listener for a parse tree produced by ExprParser.
 export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
+	// Variables
 	lastAmino = "";
 	index = 0;
 	queries = [];
 	repetitions = [];
 
-	// auxiliary for gaps
+	// Gap's variables
 	isGap = false;
-	table = "next_amino_amino";
 	minGap = 0;
 	maxGap = 0;
+
+	// Ligand's variables
+	ligandText = "";
+	ligandCondition = "";
+
 
 	// Enter a parse tree produced by ExprParser#pattern.
 	enterPattern(ctx) {
@@ -31,7 +40,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ExprParser#pattern.
 	exitPattern(ctx) {
-		var bigQuery = getQuery(this.queries);
+		var bigQuery = getQuery(this.queries, this.index);
 		var completeQuery = `
 		SELECT id, title, classification, organism, Q.* FROM (
 			`+ bigQuery + `) AS Q NATURAL JOIN protein WHERE protein_id=id`;
@@ -54,6 +63,13 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ExprParser#ligandextended.
 	exitLigandextended(ctx) {
+		let ligands = ctx.getText().replaceAll("[", "").replaceAll("]", "").split(",");
+		let first = ligands.shift();
+		this.ligandText = ctx.getText();
+		this.ligandCondition = "het_symbol = '" + first + "'";
+		ligands.forEach(ligand => {
+			this.ligandCondition = this.ligandCondition + " OR het_symbol = '" + ligand + "'";
+		});
 	}
 
 
@@ -63,6 +79,8 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ExprParser#ligand.
 	exitLigand(ctx) {
+		this.ligandText = ctx.getText();
+		this.ligandCondition = "het_symbol = '" + ctx.getText() + "'";
 	}
 
 
@@ -85,6 +103,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 		if (this.lastAmino == "") {
 			this.lastAmino = ctx.getText()
 			this.index += 1;
+			this.genLigandQuery(ctx.getText());
 		}
 		else {
 			// Check if the last amino is a Any amino
@@ -95,7 +114,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_any_next_amino_any;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -116,6 +134,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 
 				// Check if the current amino is a except
@@ -123,7 +142,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_any_next_amino;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -155,6 +173,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 
 				// Check if the current amino is a group
@@ -162,7 +181,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_any_next_amino;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -194,6 +212,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 
 				// Check if the current amino is a unique amino
@@ -201,7 +220,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_any_next_amino;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -224,6 +242,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 			}
 
@@ -234,7 +253,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_next_amino_any;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -266,6 +284,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 
 				// Check if the current amino is a except
@@ -273,7 +292,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_next_amino;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -313,6 +331,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 
 				// Check if the current amino is a group
@@ -320,7 +339,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_next_amino;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -360,6 +378,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 
 				// Check if the current amino is a unique amino
@@ -367,7 +386,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_next_amino;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -401,6 +419,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 			}
 
@@ -411,7 +430,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_next_amino_any;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -443,6 +461,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 
 				// Check if the current amino is a except
@@ -450,7 +469,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_next_amino;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -490,6 +508,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 
 				// Check if the current amino is a group
@@ -497,7 +516,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_next_amino;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -537,6 +555,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 
 				// Check if the current amino is a unique amino
@@ -544,7 +563,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_next_amino;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -578,6 +596,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 			}
 
@@ -588,7 +607,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_next_amino_any;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -611,6 +629,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 
 				// Check if the current amino is a except
@@ -618,7 +637,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_next_amino;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -651,6 +669,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 
 				// Check if the current amino is a group
@@ -658,7 +677,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_next_amino;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -691,6 +709,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 
 				// Check if the current amino is a unique amino
@@ -698,7 +717,6 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					var query = amino_next_amino;
 
 					if (this.isGap) {
-						this.table = "distance_amino_amino";
 						var gap_condition = amino_gap_condition;
 						gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
 						gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
@@ -722,6 +740,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 					this.queries.push(query)
 					this.lastAmino = ctx.getText()
 					this.index += 1;
+					this.genLigandQuery(ctx.getText());
 				}
 			}
 		}
@@ -758,6 +777,7 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 			if (this.lastAmino == "") {
 				this.lastAmino = amino
 				this.index += 1;
+				this.genLigandQuery(amino);
 			}
 			else {
 				// Check if the last amino is a Any amino
@@ -768,9 +788,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						var query = amino_any_next_amino_any;
 						query = query.replaceAll('<<amino_any 1 id>>', (this.index).toString())
 						query = query.replaceAll("<<amino_any 2 id>>", (this.index + 1).toString())
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 
 					// Check if the current amino is a except
@@ -788,9 +824,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						});
 						condition += ")";
 						query = query.replaceAll('<<condition>>', condition);
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 
 					// Check if the current amino is a group
@@ -808,9 +860,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						});
 						condition += ")";
 						query = query.replaceAll('<<condition>>', condition);
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 
 					// Check if the current amino is a unique amino
@@ -819,9 +887,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						query = query.replaceAll('<<amino_any id>>', (this.index).toString());
 						query = query.replaceAll('<<amino id>>', (this.index + 1).toString());
 						query = query.replaceAll('<<condition>>', "amino2_symbol ='" + amino + "'");
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 				}
 
@@ -842,9 +926,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						});
 						condition += ")";
 						query = query.replaceAll('<<condition>>', condition);
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 
 					// Check if the current amino is a except
@@ -870,9 +970,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						condition2 += ")";
 						query = query.replaceAll('<<condition 1>>', condition1);
 						query = query.replaceAll('<<condition 2>>', condition2);
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 
 					// Check if the current amino is a group
@@ -898,9 +1014,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						condition2 += ")";
 						query = query.replaceAll('<<condition 1>>', condition1);
 						query = query.replaceAll('<<condition 2>>', condition2);
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 
 					// Check if the current amino is a unique amino
@@ -920,9 +1052,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 						query = query.replaceAll('<<condition 1>>', condition1);
 						query = query.replaceAll('<<condition 2>>', "amino2_symbol ='" + amino + "'")
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 				}
 
@@ -943,9 +1091,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						});
 						condition += ")";
 						query = query.replaceAll('<<condition>>', condition);
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 
 					// Check if the current amino is a except
@@ -971,9 +1135,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						condition2 += ")";
 						query = query.replaceAll('<<condition 1>>', condition1);
 						query = query.replaceAll('<<condition 2>>', condition2);
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 
 					// Check if the current amino is a group
@@ -999,9 +1179,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						condition2 += ")";
 						query = query.replaceAll('<<condition 1>>', condition1);
 						query = query.replaceAll('<<condition 2>>', condition2);
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 
 					// Check if the current amino is a unique amino
@@ -1021,9 +1217,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 
 						query = query.replaceAll('<<condition 1>>', condition1);
 						query = query.replaceAll('<<condition 2>>', "amino2_symbol ='" + amino + "'")
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 				}
 
@@ -1035,9 +1247,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						query = query.replaceAll('<<amino id>>', (this.index).toString())
 						query = query.replaceAll('<<amino_any id>>', (this.index + 1).toString())
 						query = query.replaceAll('<<condition>>', "amino1_symbol ='" + this.lastAmino + "'")
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 
 					// Check if the current amino is a except
@@ -1056,9 +1284,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						condition2 += ")";
 						query = query.replaceAll('<<condition 1>>', "amino1_symbol ='" + this.lastAmino + "'")
 						query = query.replaceAll('<<condition 2>>', condition2)
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 
 					// Check if the current amino is a group
@@ -1077,9 +1321,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						condition2 += ")";
 						query = query.replaceAll('<<condition 1>>', "amino1_symbol ='" + this.lastAmino + "'")
 						query = query.replaceAll('<<condition 2>>', condition2)
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 
 					// Check if the current amino is a unique amino
@@ -1089,9 +1349,25 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 						query = query.replaceAll('<<amino 2 id>>', (this.index + 1).toString())
 						query = query.replaceAll('<<condition 1>>', "amino1_symbol ='" + this.lastAmino + "'")
 						query = query.replaceAll('<<condition 2>>', "amino2_symbol ='" + amino + "'")
+						if (this.isGap) {
+							var gap_condition = amino_gap_condition;
+							gap_condition = gap_condition.replaceAll("<<min_gap>>", this.minGap);
+							gap_condition = gap_condition.replaceAll("<<max_gap>>", this.maxGap);
+
+							query = query.replaceAll("<<table>>", 'distance_amino_amino');
+							query = query.replaceAll("<<gap condition>>", gap_condition);
+							this.isGap = false;
+							this.minGap = 0;
+							this.maxGap = 0;
+						}
+						else {
+							query = query.replaceAll("<<table>>", 'next_amino_amino');
+							query = query.replaceAll("<<gap condition>>", '');
+						}
 						this.queries.push(query)
 						this.lastAmino = amino
 						this.index += 1;
+						this.genLigandQuery(amino);
 					}
 				}
 			}
@@ -1169,5 +1445,101 @@ export default class ExprListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
+	// Extras functions
+	genLigandQuery(amino) {
+		if (this.ligandText == '') {
+			if (amino == 'X') {
+				// any ligando -> any amino
+				var query = any_ligand_to_any_amino;
+				query = query.replaceAll("<<amino id>>", this.index + "");
+				this.queries.push(query);
+			}
 
+			else if (amino.includes('[') && amino.includes(']')) {
+				// any ligando -> group amino
+				var query = any_ligand_to_amino;
+				var aminos = amino.replaceAll("[", "").replaceAll("]", "").split("");
+				var first = aminos.shift();
+				var condition = "amino_symbol = '" + first + "'";
+				aminos.forEach(amino => {
+					condition = condition + " OR amino_symbol = '" + amino + "'";
+				});
+				query = query.replaceAll("<<amino id>>", this.index);
+				query = query.replaceAll("<<amino condition>>", condition);
+				this.queries.push(query);
+			}
+
+			else if (amino.includes('{') && amino.includes('}')) {
+				// any ligando -> except amino
+				var query = any_ligand_to_amino;
+				var aminos = amino.replaceAll("{", "").replaceAll("}", "").split("");
+				var first = aminos.shift();
+				var condition = "amino_symbol = '" + first + "'";
+				aminos.forEach(amino => {
+					condition = condition + " AND amino_symbol != '" + amino + "'";
+				});
+				query = query.replaceAll("<<amino id>>", this.index);
+				query = query.replaceAll("<<amino condition>>", condition);
+				this.queries.push(query);
+			}
+
+			else {
+				// any ligando -> unique amino
+				var query = any_ligand_to_amino;
+				var condition = "amino_symbol = '" + amino + "'";
+				query = query.replaceAll("<<amino id>>", this.index);
+				query = query.replaceAll("<<amino condition>>", condition);
+				this.queries.push(query);
+			}
+		}
+
+		else {
+			if (amino == 'X') {
+				// ligando -> any amino
+				var query = ligand_to_any_amino;
+				query = query.replaceAll("<<amino id>>", this.index + "");
+				query = query.replaceAll("<<ligand condition>>", this.ligandCondition);
+				this.queries.push(query);
+			}
+
+			else if (amino.includes('[') && amino.includes(']')) {
+				// ligando -> group amino
+				var query = ligand_to_amino;
+				var aminos = amino.replaceAll("[", "").replaceAll("]", "").split("");
+				var first = aminos.shift();
+				var condition = "amino_symbol = '" + first + "'";
+				aminos.forEach(amino => {
+					condition = condition + " OR amino_symbol = '" + amino + "'";
+				});
+				query = query.replaceAll("<<amino id>>", this.index);
+				query = query.replaceAll("<<amino condition>>", condition);
+				query = query.replaceAll("<<ligand condition>>", this.ligandCondition);
+				this.queries.push(query);
+			}
+
+			else if (amino.includes('{') && amino.includes('}')) {
+				// ligando -> except amino
+				var query = ligand_to_amino;
+				var aminos = amino.replaceAll("{", "").replaceAll("}", "").split("");
+				var first = aminos.shift();
+				var condition = "amino_symbol != '" + first + "'";
+				aminos.forEach(amino => {
+					condition = condition + " AND amino_symbol != '" + amino + "'";
+				});
+				query = query.replaceAll("<<amino id>>", this.index);
+				query = query.replaceAll("<<amino condition>>", condition);
+				query = query.replaceAll("<<ligand condition>>", this.ligandCondition);
+				this.queries.push(query);
+			}
+			else {
+				// ligando -> unique amino
+				var query = ligand_to_amino;
+				var condition = "amino_symbol = '" + amino + "'";
+				query = query.replaceAll("<<amino id>>", this.index);
+				query = query.replaceAll("<<amino condition>>", condition);
+				query = query.replaceAll("<<ligand condition>>", this.ligandCondition);
+				this.queries.push(query);
+			}
+		}
+	}
 }

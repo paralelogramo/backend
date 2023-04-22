@@ -46,11 +46,37 @@ export const amino_gap_condition = `AND ((Split_part(amino2_id, '_', 3)::INT) > 
                               AND ((((Split_part(amino2_id, '_', 3)::INT) - (Split_part(amino1_id, '_', 3)::INT)) ::INT)::INT - 1 >= <<min_gap>>)
                               AND ((((Split_part(amino2_id, '_', 3)::INT) - (Split_part(amino1_id, '_', 3)::INT)) ::INT)::INT - 1 <= <<max_gap>>)`;
 
-export const ligand_amino = '';
+export const ligand_to_amino = `SELECT protein_id, het_id, het_number, het_symbol,
+                                amino_id AS amino<<amino id>>_id,
+                                amino_symbol AS amino<<amino id>>_symbol,
+                                amino_number AS amino<<amino id>>_number
+                                FROM distance_het_amino
+                                WHERE (<<ligand condition>>)
+                                AND (<<amino condition>>)`;
 
-export default function getQuery(littleQueries) {
+export const ligand_to_any_amino = `SELECT protein_id, het_id, het_number, het_symbol,
+                                    amino_id AS amino<<amino id>>_id,
+                                    amino_symbol AS amino<<amino id>>_symbol,
+                                    amino_number AS amino<<amino id>>_number
+                                    FROM distance_het_amino
+                                    WHERE (<<ligand condition>>)`;
+
+export const any_ligand_to_amino = `SELECT protein_id, het_id, het_number, het_symbol,
+                                    amino_id AS amino<<amino id>>_id,
+                                    amino_symbol AS amino<<amino id>>_symbol,
+                                    amino_number AS amino<<amino id>>_number
+                                    FROM distance_het_amino
+                                    WHERE <<amino condition>>`;
+
+export const any_ligand_to_any_amino = `SELECT protein_id, het_id, het_number, het_symbol,
+                                        amino_id AS amino<<amino id>>_id,
+                                        amino_symbol AS amino<<amino id>>_symbol,
+                                        amino_number AS amino<<amino id>>_number
+                                        FROM distance_het_amino`;
+
+export default function getQuery(littleQueries, lastIndex) {
     var index = 1;
-    if (littleQueries.length > 1){
+    if (lastIndex > 1){
         var lastQuery = littleQueries.pop();
         var init = ` SELECT *
         FROM (
@@ -74,14 +100,14 @@ export default function getQuery(littleQueries) {
         AS
         Q` + index + end;
     
-        for (let i = 0; i <= littleQueries.length; i++) {
-            init = init + `amino` + (i+1).toString() + `_id <> amino` + (i+2).toString() + `_id    AND\n`
+        for (let i = 1; i < lastIndex; i++) {
+            init = init + `amino` + (i).toString() + `_id <> amino` + (i+1).toString() + `_id    AND\n`
         }
     
         var finalQuery = init.slice(0, init.length-4)
         return finalQuery;
     }
-    if (littleQueries.length == 1){
+    if (lastIndex == 1){
         return littleQueries[0];
     }
     
