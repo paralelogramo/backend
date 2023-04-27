@@ -3,6 +3,7 @@ import DB from "./database.js";
 import { getError } from "./Parser/catchElements.js";
 import Parser from "./Parser/Parser.js";
 import * as cors from "cors";
+import { list_of_aminos_start_end } from "./Parser/enumQueries.js";
 
 const app = express();
 
@@ -41,7 +42,7 @@ app.get('/getProteinsByPattern', async (req, res) => {
         var result = Parser(req.query.pattern.replaceAll(';',','));
         var limit = req.query.limit;
         var offset = req.query.offset;
-        var query = result.query + ` LIMIT ${limit} OFFSET ${offset}`;
+        var query = result.query + ` ORDER BY protein_id ASC LIMIT ${limit} OFFSET ${offset}`;
         var error = getError();
 
         if (Object.keys(error).length == 0) {
@@ -138,6 +139,62 @@ app.get('/getProteinByID', async (req, res) => {
         })
     }
 })
+
+app.get('/getListLigands', async (req, res) => {
+    try {
+        DB.any(`SELECT het_symbol FROM distance_het_amino GROUP BY het_symbol ORDER BY het_symbol ASC`)
+            .then(function (data) {
+                res.status(200).send({
+                    state: "SUCCESS",
+                    message: "We found the data you were looking for.",
+                    data: data
+                })
+            })
+            .catch(function (error) {
+                res.status(500).send({
+                    state: "ERROR_DB",
+                    message: "Sorry, something went wrong in the database.",
+                    error: error
+                })
+            });
+    } catch (error) {
+        res.status(503).send({
+            state: "ERROR_API",
+            message: "Sorry, asomething went wrong in the server.",
+            error: error
+        })
+    }
+})
+
+app.get('/getListOfAminosByStartEnd', async (req, res) => {
+    let query = list_of_aminos_start_end
+                .replaceAll('<<p_id>>', req.query.p_id)
+                .replaceAll('<<start>>', req.query.start)
+                .replaceAll('<<end>>', req.query.end)
+    try {
+        DB.any(query)
+            .then(function (data) {
+                res.status(200).send({
+                    state: "SUCCESS",
+                    message: "We found the data you were looking for.",
+                    data: data
+                })
+            })
+            .catch(function (error) {
+                res.status(500).send({
+                    state: "ERROR_DB",
+                    message: "Sorry, something went wrong in the database.",
+                    error: error
+                })
+            });
+    } catch (error) {
+        res.status(503).send({
+            state: "ERROR_API",
+            message: "Sorry, asomething went wrong in the server.",
+            error: error
+        })
+    }
+});
 
 app.listen(3000, () => {
     console.log("Server is running on port 3000");

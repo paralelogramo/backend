@@ -73,6 +73,17 @@ export const any_ligand_to_any_amino = `SELECT protein_id, het_id, het_number, h
                                         amino_symbol AS amino<<amino id>>_symbol,
                                         amino_number AS amino<<amino id>>_number
                                         FROM distance_het_amino`;
+                                    
+export const list_of_aminos_start_end = `SELECT string_agg(amino1_symbol, '-') AS pattern
+                                        FROM (
+                                            SELECT amino1_symbol
+                                            FROM next_amino_amino
+                                            WHERE
+                                                protein_id = '<<p_id>>' AND
+                                                Split_part(amino1_id, '_', 3)::INT >= <<start>> AND
+                                                Split_part(amino1_id, '_', 3)::INT <= <<end>>
+                                            ORDER BY amino1_id ASC
+                                        ) AS Q `
 
 export default function getQuery(littleQueries, lastIndex) {
     var index = 1;
